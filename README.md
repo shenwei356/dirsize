@@ -1,7 +1,7 @@
 dirsize
 ========
 
-Summarize size of directories and files in directories.
+Command tool for summarizing size of directories and files in directories.
 dirsize is wiritten in [golang](http://golang.org).
 
 Install
@@ -36,12 +36,18 @@ Result:
       2.08 KB	.gitignore
       2.77 KB	main.go
 
-Have a try
+Have a Try
 ----------
-you can compile by yourself or just download the executable files immediately.
+You can compile by yourself or just download the executable files immediately.
 
 - [dirsize.exe](https://github.com/shenwei356/dirsize/blob/master/dirsize.exe) for win32.
 
+Attention
+---------
+The ouput text is encoded in UTF-8. For those who use none-utf8 shell, 
+redirecting to a temporary file is an easy solution.
+
+    dirsize -s -r . > tmp.txt
       
 Copyright (c) 2013, Wei Shen (shenwei356@gmail.com)
 
