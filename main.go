@@ -54,16 +54,16 @@ func main() {
 			}
 			// reverse order while sorting
 			if sortReverse {
-				if sortBySize { // sort by Alphabet
-					sort.Sort(ByValue{info})
-				} else { // sort by Size
+				if sortByAlphabet { // sort by Alphabet
 					sort.Sort(Reverse{ByKey{info}})
+				} else { // sort by Size
+					sort.Sort(ByValue{info})
 				}
 			} else {
-				if sortBySize {
-					sort.Sort(Reverse{ByValue{info}})
-				} else {
+				if sortByAlphabet {
 					sort.Sort(ByKey{info})
+				} else {
+					sort.Sort(Reverse{ByValue{info}})
 				}
 			}
 
