@@ -29,7 +29,6 @@ Example
 Result:
 
     .:   6.54 KB
-      0.00  B	t.txt
     505.00  B	.gitattributes
     596.00  B	README.md
     628.00  B	.git
