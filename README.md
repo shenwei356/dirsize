@@ -29,12 +29,15 @@ Example
 
 Result:
 
-    .:   6.54 KB
-    505.00  B	.gitattributes
-    596.00  B	README.md
-    628.00  B	.git
-      2.08 KB	.gitignore
-      2.77 KB	main.go
+    .:   2.40 MB
+      0.00  B	t.txt
+    483.00  B	.gitattributes
+      1.07 KB	LICENSE
+      1.15 KB	README.md
+      1.92 KB	.gitignore
+      2.76 KB	main.go
+      1.02 MB	.git
+      1.37 MB	dirsize.exe
 
 Have a Try
 ----------
