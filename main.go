@@ -6,11 +6,11 @@
 package main
 
 import (
-    . "github.com/shenwei356/util/bytesize"
-    . "github.com/shenwei356/util/sortitem"
 	"errors"
 	"flag"
 	"fmt"
+	. "github.com/shenwei356/util/bytesize"
+	. "github.com/shenwei356/util/sortitem"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -52,11 +52,11 @@ func main() {
 			if err != nil {
 				fmt.Println(err)
 			}
-            // reverse order while sorting
+			// reverse order while sorting
 			if sortReverse {
 				if sortBySize { // sort by Alphabet
 					sort.Sort(ByValue{info})
-				} else {        // sort by Size
+				} else { // sort by Size
 					sort.Sort(Reverse{ByKey{info}})
 				}
 			} else {
