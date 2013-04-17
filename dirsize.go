@@ -37,13 +37,14 @@ func init() {
 		flag.PrintDefaults()
 	}
 	flag.Parse()
-	if len(flag.Args()) == 0 {
-		flag.Usage()
-	}
 }
 
 func main() {
-	for _, arg := range flag.Args() {
+	dirs := flag.Args()
+	if len(dirs) == 0 {
+		dirs = append(dirs, "./")
+	}
+	for _, arg := range dirs {
 		if strings.HasPrefix(arg, "-") {
 			continue
 		}
