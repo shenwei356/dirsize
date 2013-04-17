@@ -43,6 +43,8 @@ Have a Try
 You can compile by yourself or just download the executable files immediately.
 
 - [dirsize.exe](https://github.com/shenwei356/dirsize/blob/master/dirsize.exe) for win32.
+- [dirsize_x86_64](https://github.com/shenwei356/dirsize/blob/master/dirsize_x86_64) for 64bit linux.
+
 
 Attention
 ---------
