@@ -4,8 +4,6 @@ dirsize
 Command tool for summarizing size of directories and files in directories.
 dirsize is wiritten in [golang](http://golang.org).
 
-dirsize2: Version 2, speed up by goroutine.
-
 Install
 -------
 This package is "go-gettable", just:
@@ -32,7 +30,6 @@ Example
 Result:
 
     .:   2.40 MB
-      0.00  B	t.txt
     483.00  B	.gitattributes
       1.07 KB	LICENSE
       1.15 KB	README.md

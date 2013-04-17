@@ -3,7 +3,7 @@
 // that can be found in the LICENSE file.
 
 // Summarize size of directories and files in directories. 
-// Version 2: speed up by goroutine.
+// Version 3: speed up by goroutine.
 package main
 
 import (
@@ -18,6 +18,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"sync"
 )
 
 var (
@@ -34,7 +35,7 @@ func init() {
 	flag.Usage = func() {
 		fmt.Printf("\nUsage: %s [OPTION]... [DIR]...\n\n", os.Args[0])
 		fmt.Println("Summarize size of directories and files in directories.")
-        fmt.Println("Version 2: speed up by goroutine.")
+		fmt.Println("Version 2: speed up by goroutine.")
 		fmt.Println("by Wei Shen (shenwei356@gmail.com)\n")
 		fmt.Println("OPTION:")
 		flag.PrintDefaults()
@@ -59,14 +60,10 @@ func main() {
 			continue
 		}
 		if _, err := os.Stat(arg); err == nil {
-			msg := make(chan DirSizeInfo, 1)
-			go FolderSize(arg, msg, true)
-			m := <-msg
-
-			if m.Err != nil {
-				fmt.Println(m.Err)
+			size, info, err := DirSize(arg, n)
+			if err != nil {
+				fmt.Println(err)
 			}
-			info := m.Info
 			// reverse order while sorting
 			if sortReverse {
 				if sortByAlphabet { // sort by Alphabet
@@ -82,7 +79,7 @@ func main() {
 				}
 			}
 
-			fmt.Printf("\n%s: %v\n", arg, ByteSize(m.Size))
+			fmt.Printf("\n%s: %v\n", arg, ByteSize(size))
 			for _, item := range info {
 				fmt.Printf("%v\t%s\n", ByteSize(item.Value), item.Key)
 			}
@@ -93,82 +90,61 @@ func main() {
 	}
 }
 
-type DirSizeInfo struct {
-	Name string
-	Size float64
-	Info []Item
-	Err  error
-}
-
-// Get total size of files in a directory, and store the sizes of first level
-// directories and files in a key-value list.
-func FolderSize(dirname string, msg chan DirSizeInfo, firstLevel bool) {
+func DirSize(path string, n int) (float64, []Item, error) {
 	var size float64 = 0
 	var info []Item
-	if firstLevel {
-		info = make([]Item, 0)
-	}
+	info = make([]Item, 0)
 
-	// dirname is a file
-	bytes, err := ioutil.ReadFile(dirname)
+	bytes, err := ioutil.ReadFile(path)
 	if err == nil {
 		size1 := float64(len(bytes))
-		if firstLevel {
-			info = append(info, Item{dirname, size1})
-		}
-		msg <- DirSizeInfo{dirname, size1, info, nil}
-		return
+		info = append(info, Item{path, size1})
+		return size1, info, nil
 	}
 
-	// ReadDir Error!
-	files, err := ioutil.ReadDir(dirname)
+	files, err := ioutil.ReadDir(path)
 	if err != nil {
-		// recover()
-		panic(err)
-		os.Exit(2)
-		msg <- DirSizeInfo{dirname, 0, nil, errors.New("ReadDir Error: " + dirname)}
-		return
+		recover()
+		return 0, nil, errors.New("ReadDir Error: " + path)
 	}
 
-	// read directories
-	dirs := make([]os.FileInfo, 0)
+	sizes := make(map[string]float64, 0)
 	for _, file := range files {
 		if file.Name() == "." || file.Name() == ".." {
 			continue
 		}
-		if file.IsDir() { // dir
-			dirs = append(dirs, file) // commpute size later
-		} else { // file
-			size1 := float64(file.Size())
-			size += size1
-			if firstLevel {
-				info = append(info, Item{file.Name(), size1})
+		sizes[file.Name()] = 0
+	}
+
+	// walk
+	var wg sync.WaitGroup
+	tokens := make(chan int, n)
+	err = filepath.Walk(path, func(file string, fileinfo os.FileInfo, err error) error {
+		if file == path {
+			return nil
+		}
+		tokens <- 1
+		wg.Add(1)
+		go func() {
+			for k, _ := range sizes {
+				if strings.HasPrefix(file, filepath.Join(path, k)+string(filepath.Separator)) || file == filepath.Join(path, k) {
+					sizes[k] += float64(fileinfo.Size())
+					break
+				}
 			}
-		}
+			wg.Done()
+			<-tokens
+		}()
+		return nil
+	})
+	if err != nil {
+		return 0, nil, errors.New("Walk Dir Error: " + path)
 	}
+	wg.Wait()
 
-	// sub directories
-	n := len(dirs)
-	c := make(chan DirSizeInfo, n)
-	for _, dir := range dirs {
-		if firstLevel {
-			go FolderSize(filepath.Join(dirname, dir.Name()), c, false)
-		} else { // avoid creating too many goroutines.
-			FolderSize(filepath.Join(dirname, dir.Name()), c, false)
-		}
+	for k, v := range sizes {
+		info = append(info, Item{k, v})
+		size += v
 	}
-
-	for i := 0; i < n; i++ {
-		m := <-c
-		if m.Err != nil {
-			msg <- DirSizeInfo{dirname, 0, nil, m.Err}
-			return
-		}
-		size += m.Size
-		if firstLevel {
-			info = append(info, Item{m.Name, m.Size})
-		}
-	}
-	msg <- DirSizeInfo{dirname, size, info, nil}
-	return
+	return size, info, nil
 }
