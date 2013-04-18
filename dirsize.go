@@ -48,34 +48,31 @@ func main() {
 		if strings.HasPrefix(arg, "-") {
 			continue
 		}
-		if _, err := os.Stat(arg); err == nil {
-			size, info, err := FolderSize(arg)
-			if err != nil {
-				fmt.Println(err)
-			}
-			// reverse order while sorting
-			if sortReverse {
-				if sortByAlphabet { // sort by Alphabet
-					sort.Sort(Reverse{ByKey{info}})
-				} else { // sort by Size
-					sort.Sort(ByValue{info})
-				}
-			} else {
-				if sortByAlphabet {
-					sort.Sort(ByKey{info})
-				} else {
-					sort.Sort(Reverse{ByValue{info}})
-				}
-			}
 
-			fmt.Printf("\n%s: %v\n", arg, ByteSize(size))
-			for _, item := range info {
-				fmt.Printf("%v\t%s\n", ByteSize(item.Value), item.Key)
-			}
-
-		} else {
-			fmt.Printf("\n%s: NOT exists!\n", arg)
+		size, info, err := FolderSize(arg)
+		if err != nil {
+			fmt.Println(err)
 		}
+		// reverse order while sorting
+		if sortReverse {
+			if sortByAlphabet { // sort by Alphabet
+				sort.Sort(Reverse{ByKey{info}})
+			} else { // sort by Size
+				sort.Sort(ByValue{info})
+			}
+		} else {
+			if sortByAlphabet {
+				sort.Sort(ByKey{info})
+			} else {
+				sort.Sort(Reverse{ByValue{info}})
+			}
+		}
+
+		fmt.Printf("\n%s: %v\n", arg, ByteSize(size))
+		for _, item := range info {
+			fmt.Printf("%v\t%s\n", ByteSize(item.Value), item.Key)
+		}
+
 	}
 }
 
@@ -86,13 +83,30 @@ func FolderSize(dirname string) (float64, []Item, error) {
 	var info []Item
 	info = make([]Item, 0)
 
+	// Check if existence
+	_, err := os.Stat(dirname)
+	if err != nil {
+		recover()
+		return 0, nil, errors.New("no such file or directory: " + dirname)
+	}
+
+	// Check the read permission
+	_, err = os.Open(dirname)
+	if err != nil {
+		recover()
+		// open-permission-denied file or directory
+		return 0, nil, err
+	}
+
 	bytes, err := ioutil.ReadFile(dirname)
+	// read file success
 	if err == nil {
 		size1 := float64(len(bytes))
 		info = append(info, Item{dirname, size1})
 		return size1, info, nil
 	}
 
+	// it's a directory
 	files, err := ioutil.ReadDir(dirname)
 	if err != nil {
 		recover()
@@ -102,18 +116,31 @@ func FolderSize(dirname string) (float64, []Item, error) {
 		if file.Name() == "." || file.Name() == ".." {
 			continue
 		}
+		fileFullPath := filepath.Join(dirname, file.Name())
+
+		// file or dir judgement could reduce the compute complexity
+		// file is not worthing call FolderSize
 		if file.IsDir() {
-			size1, _, err := FolderSize(filepath.Join(dirname, file.Name()))
+			size1, _, err := FolderSize(fileFullPath)
 			if err != nil {
 				recover()
-				// return 0, nil, err
 				// skip this directory
-				fmt.Printf("skiped: %s\n", filepath.Join(dirname, file.Name()))
+				fmt.Printf("read permission denied  (dir): %s\n", fileFullPath)
 				continue
 			}
 			size += size1
 			info = append(info, Item{file.Name(), size1})
 		} else {
+			// Check the read permission
+			// DO NOT use ioutil.ReadFile, which will exhaust the RAM!!!!
+			_, err := os.Open(fileFullPath)
+			if err != nil && os.IsPermission(err) {
+				recover()
+				// open-permission-denied file
+				fmt.Printf("read permission denied (file): %s\n", fileFullPath)
+				continue
+			}
+
 			size1 := float64(file.Size())
 			size += size1
 			info = append(info, Item{file.Name(), size1})
