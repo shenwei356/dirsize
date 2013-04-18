@@ -48,8 +48,13 @@ func main() {
 		if strings.HasPrefix(arg, "-") {
 			continue
 		}
-
-		size, info, err := FolderSize(arg)
+		// Check file existence
+		_, err := os.Stat(arg)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		size, info, err := FolderSize(arg, true)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -72,26 +77,20 @@ func main() {
 		for _, item := range info {
 			fmt.Printf("%v\t%s\n", ByteSize(item.Value), item.Key)
 		}
-
 	}
 }
 
 // Get total size of files in a directory, and store the sizes of first level
 // directories and files in a key-value list.
-func FolderSize(dirname string) (float64, []Item, error) {
+func FolderSize(dirname string, firstLevel bool) (float64, []Item, error) {
 	var size float64 = 0
 	var info []Item
-	info = make([]Item, 0)
-
-	// Check if existence
-	_, err := os.Stat(dirname)
-	if err != nil {
-		recover()
-		return 0, nil, errors.New("no such file or directory: " + dirname)
+	if firstLevel {
+		info = make([]Item, 0)
 	}
 
 	// Check the read permission
-	_, err = os.Open(dirname)
+	_, err := os.Open(dirname)
 	if err != nil {
 		recover()
 		// open-permission-denied file or directory
@@ -102,7 +101,9 @@ func FolderSize(dirname string) (float64, []Item, error) {
 	// read file success
 	if err == nil {
 		size1 := float64(len(bytes))
-		info = append(info, Item{dirname, size1})
+		if firstLevel {
+			info = append(info, Item{dirname, size1})
+		}
 		return size1, info, nil
 	}
 
@@ -121,7 +122,7 @@ func FolderSize(dirname string) (float64, []Item, error) {
 		// file or dir judgement could reduce the compute complexity
 		// file is not worthing call FolderSize
 		if file.IsDir() {
-			size1, _, err := FolderSize(fileFullPath)
+			size1, _, err := FolderSize(fileFullPath, false)
 			if err != nil {
 				recover()
 				// skip this directory
@@ -129,7 +130,9 @@ func FolderSize(dirname string) (float64, []Item, error) {
 				continue
 			}
 			size += size1
-			info = append(info, Item{file.Name(), size1})
+			if firstLevel {
+				info = append(info, Item{file.Name(), size1})
+			}
 		} else {
 			// Check the read permission
 			// DO NOT use ioutil.ReadFile, which will exhaust the RAM!!!!
@@ -143,7 +146,9 @@ func FolderSize(dirname string) (float64, []Item, error) {
 
 			size1 := float64(file.Size())
 			size += size1
-			info = append(info, Item{file.Name(), size1})
+			if firstLevel {
+				info = append(info, Item{file.Name(), size1})
+			}
 		}
 	}
 	return size, info, nil
