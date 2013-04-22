@@ -90,12 +90,13 @@ func FolderSize(dirname string, firstLevel bool) (float64, []Item, error) {
 	}
 
 	// Check the read permission
-	_, err := os.Open(dirname)
+	f, err := os.Open(dirname)
 	if err != nil {
 		recover()
 		// open-permission-denied file or directory
 		return 0, nil, err
 	}
+	defer f.Close()
 
 	bytes, err := ioutil.ReadFile(dirname)
 	// read file success
@@ -136,12 +137,18 @@ func FolderSize(dirname string, firstLevel bool) (float64, []Item, error) {
 		} else {
 			// Check the read permission
 			// DO NOT use ioutil.ReadFile, which will exhaust the RAM!!!!
-			_, err := os.Open(fileFullPath)
+			f2, err := os.Open(fileFullPath)
 			if err != nil && os.IsPermission(err) {
 				recover()
 				// open-permission-denied file
 				fmt.Printf("read permission denied (file): %s\n", fileFullPath)
 				continue
+			}
+
+			// to avoid panic "open two many file"
+			// defer df2.Close() did not seccess due to "nil pointer err"
+			if f2 != nil {
+				f2.Close()
 			}
 
 			size1 := float64(file.Size())
