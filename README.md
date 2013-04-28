@@ -8,7 +8,7 @@ Install
 -------
 This package is "go-gettable", just:
 
-    go get github.com/shenwei356/util/dirsize
+    go get github.com/shenwei356/dirsize
 
 Usage
 -----
