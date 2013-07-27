@@ -114,6 +114,7 @@ func FolderSize(dirname string, firstLevel bool) (float64, []Item, error) {
 		recover()
 		return 0, nil, errors.New("ReadDir Error: " + dirname)
 	}
+
 	for _, file := range files {
 		if file.Name() == "." || file.Name() == ".." {
 			continue
@@ -135,9 +136,16 @@ func FolderSize(dirname string, firstLevel bool) (float64, []Item, error) {
 				info = append(info, Item{file.Name(), size1})
 			}
 		} else {
+			mode := file.Mode()
+			// ignore pipe file
+			if strings.HasPrefix(mode.String(), "p") {
+				fmt.Printf("pipe file ignored: %s\n", fileFullPath)
+				continue
+			}
 			// Check the read permission
 			// DO NOT use ioutil.ReadFile, which will exhaust the RAM!!!!
 			f2, err := os.Open(fileFullPath)
+
 			if err != nil && os.IsPermission(err) {
 				recover()
 				// open-permission-denied file
