@@ -30,10 +30,10 @@ func init() {
 	flag.BoolVar(&sortBySize, "s", true, "sort by Size.")
 	flag.BoolVar(&sortReverse, "r", false, "reverse order while sorting.")
 	flag.Usage = func() {
-		fmt.Printf("\nUsage: %s [OPTION]... [DIR]...\n\n", os.Args[0])
-		fmt.Println("Summarize size of directories and files in directories.")
-		fmt.Println("by Wei Shen (shenwei356@gmail.com)\n")
-		fmt.Println("OPTION:")
+		fmt.Fprintf(os.Stderr, "\nUsage: %s [OPTION]... [DIR]...\n\n", os.Args[0])
+		fmt.Fprintln(os.Stderr, "Summarize size of directories and files in directories.")
+		fmt.Fprintln(os.Stderr, "by Wei Shen (shenwei356@gmail.com)\n")
+		fmt.Fprintln(os.Stderr, "OPTION:")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -51,12 +51,12 @@ func main() {
 		// Check file existence
 		_, err := os.Stat(arg)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Fprintln(os.Stderr, err)
 			continue
 		}
 		size, info, err := FolderSize(arg, true)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Fprintln(os.Stderr, err)
 		}
 		// reverse order while sorting
 		if sortReverse {
@@ -128,7 +128,7 @@ func FolderSize(dirname string, firstLevel bool) (float64, []Item, error) {
 			if err != nil {
 				recover()
 				// skip this directory
-				fmt.Printf("read permission denied  (dir): %s\n", fileFullPath)
+				fmt.Fprintf(os.Stderr, "read permission denied  (dir): %s\n", fileFullPath)
 				continue
 			}
 			size += size1
@@ -139,7 +139,7 @@ func FolderSize(dirname string, firstLevel bool) (float64, []Item, error) {
 			mode := file.Mode()
 			// ignore pipe file
 			if strings.HasPrefix(mode.String(), "p") {
-				fmt.Printf("pipe file ignored: %s\n", fileFullPath)
+				fmt.Fprintf(os.Stderr, "pipe file ignored: %s\n", fileFullPath)
 				continue
 			}
 			// Check the read permission
@@ -149,7 +149,7 @@ func FolderSize(dirname string, firstLevel bool) (float64, []Item, error) {
 			if err != nil && os.IsPermission(err) {
 				recover()
 				// open-permission-denied file
-				fmt.Printf("read permission denied (file): %s\n", fileFullPath)
+				fmt.Fprintf(os.Stderr, "read permission denied (file): %s\n", fileFullPath)
 				continue
 			}
 
