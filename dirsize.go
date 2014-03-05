@@ -9,13 +9,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	. "github.com/shenwei356/util/bytesize"
-	. "github.com/shenwei356/util/sortitem"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	. "github.com/shenwei356/util/bytesize"
+	. "github.com/shenwei356/util/sortitem"
 )
 
 var (
@@ -30,11 +30,20 @@ func init() {
 	flag.BoolVar(&sortBySize, "s", true, "sort by Size.")
 	flag.BoolVar(&sortReverse, "r", false, "reverse order while sorting.")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "\nUsage: %s [OPTION]... [DIR]...\n\n", os.Args[0])
-		fmt.Fprintln(os.Stderr, "Summarize size of directories and files in directories.")
-		fmt.Fprintln(os.Stderr, "by Wei Shen (shenwei356@gmail.com)\n")
+		fmt.Fprintf(os.Stderr, `
+dirsize
+  Summarize size of directories and files in directories.
+
+Usage: dirsize [OPTION...] [DIR...]
+
+`)
 		fmt.Fprintln(os.Stderr, "OPTION:")
 		flag.PrintDefaults()
+		fmt.Fprintf(os.Stderr, `
+  Site: https://github.com/shenwei356/dirsize
+Author: Wei Shen (shenwei356@gmail.com)
+
+`)
 	}
 	flag.Parse()
 }
@@ -112,7 +121,7 @@ func FolderSize(dirname string, firstLevel bool) (float64, []Item, error) {
 	files, err := ioutil.ReadDir(dirname)
 	if err != nil {
 		recover()
-		return 0, nil, errors.New("ReadDir Error: " + dirname)
+		return 0, nil, errors.New("read directory error: " + dirname)
 	}
 
 	for _, file := range files {
@@ -128,7 +137,7 @@ func FolderSize(dirname string, firstLevel bool) (float64, []Item, error) {
 			if err != nil {
 				recover()
 				// skip this directory
-				fmt.Fprintf(os.Stderr, "read permission denied  (dir): %s\n", fileFullPath)
+				fmt.Fprintf(os.Stderr, "read permission denied (dir): %s\n", fileFullPath)
 				continue
 			}
 			size += size1
