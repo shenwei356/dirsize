@@ -4,10 +4,15 @@ dirsize
 Command tool for summarizing size of directories and files in directories.
 dirsize is wiritten in [golang](http://golang.org).
 
-Download
+Install
 -------
 
-To compile with the newest source code, please use [gobuild - Cross-Platform Go Project Compiler](http://gobuild.io/download/github.com/shenwei356/dirsize). It's simple and fast!
+[Download](https://github.com/shenwei356/dirsize/releases)
+
+This package is "go-gettable", just:
+
+    go get github.com/shenwei356/dirsize
+    go install github.com/shenwei356/dirsize
 
 Usage
 -----
