@@ -32,13 +32,13 @@ func init() {
 	flag.BoolVar(&sortReverse, "r", false, "reverse order while sorting.")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, `
-dirsize
+dirsize (v1.1)
   Summarize size of directories and files in directories.
 
 Usage: dirsize [OPTION...] [DIR...]
 
 `)
-		fmt.Fprintln(os.Stderr, "OPTION:")
+		fmt.Fprintln(os.Stderr, "Options:")
 		flag.PrintDefaults()
 		fmt.Fprintf(os.Stderr, `
   Site: https://github.com/shenwei356/dirsize
@@ -83,7 +83,7 @@ func main() {
 			}
 		}
 
-		fmt.Printf("\n%s: %v\n", arg, bytesize.ByteSize(size))
+		fmt.Printf("\n%s: %v\n", blue(arg), bytesize.ByteSize(size))
 		for _, item := range info {
 			if item.IsDir {
 				fmt.Printf("%10v\t%s\n", bytesize.ByteSize(item.Value), blue(item.Key))
