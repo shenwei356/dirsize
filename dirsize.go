@@ -9,20 +9,19 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/shenwei356/util/bytesize"
 )
 
 var (
 	sortByAlphabet bool
 	sortBySize     bool
 	sortReverse    bool
+	base1000       bool
 )
 
 // Parse arguments and show usage.
@@ -30,9 +29,10 @@ func init() {
 	flag.BoolVar(&sortByAlphabet, "a", false, "sort by Alphabet.")
 	flag.BoolVar(&sortBySize, "s", true, "sort by Size.")
 	flag.BoolVar(&sortReverse, "r", false, "reverse order while sorting.")
+	flag.BoolVar(&base1000, "k", false, "use base 1000 instead of 1024")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, `
-dirsize (v1.1)
+dirsize (v1.2.0)
   Summarize size of directories and files in directories.
 
 Usage: dirsize [OPTION...] [DIR...]
@@ -54,6 +54,12 @@ func main() {
 	if len(dirs) == 0 {
 		dirs = append(dirs, "./")
 	}
+
+	f := IBytes
+	if base1000 {
+		f = Bytes
+	}
+
 	for _, arg := range dirs {
 		if strings.HasPrefix(arg, "-") {
 			continue
@@ -83,12 +89,12 @@ func main() {
 			}
 		}
 
-		fmt.Printf("\n%s: %v\n", blue(arg), bytesize.ByteSize(size))
+		fmt.Printf("\n%s: %v\n", blue(arg), f(uint64(size)))
 		for _, item := range info {
 			if item.IsDir {
-				fmt.Printf("%10v\t%s\n", bytesize.ByteSize(item.Value), blue(item.Key))
+				fmt.Printf("%10v\t%s\n", f(uint64(item.Value)), blue(item.Key))
 			} else {
-				fmt.Printf("%10v\t%s\n", bytesize.ByteSize(item.Value), item.Key)
+				fmt.Printf("%10v\t%s\n", f(uint64(item.Value)), item.Key)
 			}
 		}
 	}
@@ -130,7 +136,7 @@ func FolderSize(dirname string, firstLevel bool) (int64, []Item, error) {
 	}
 
 	// it's a directory
-	files, err := ioutil.ReadDir(dirname)
+	files, err := os.ReadDir(dirname)
 	if err != nil {
 		return 0, nil, errors.New("read directory error: " + dirname)
 	}
@@ -155,7 +161,7 @@ func FolderSize(dirname string, firstLevel bool) (int64, []Item, error) {
 				info = append(info, Item{file.Name(), size1, true})
 			}
 		} else {
-			mode := file.Mode()
+			mode := file.Type().Perm()
 			// ignore pipe file
 			if strings.HasPrefix(mode.String(), "p") {
 				fmt.Fprintf(os.Stderr, "pipe file ignored: %s\n", fileFullPath)
@@ -172,17 +178,23 @@ func FolderSize(dirname string, firstLevel bool) (int64, []Item, error) {
 				continue
 			}
 
+			fi, err := f2.Stat()
+			if err != nil {
+				return 0, nil, err
+			}
+
+			size1 := fi.Size()
+			size += size1
+			if firstLevel {
+				info = append(info, Item{file.Name(), size1, false})
+			}
+
 			// to avoid panic "open two many file"
 			// defer df2.Close() did not seccess due to "nil pointer err"
 			if f2 != nil {
 				f2.Close()
 			}
 
-			size1 := file.Size()
-			size += size1
-			if firstLevel {
-				info = append(info, Item{file.Name(), size1, false})
-			}
 		}
 	}
 	return size, info, nil
