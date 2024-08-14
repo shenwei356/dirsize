@@ -14,6 +14,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/dustin/go-humanize"
 	"github.com/fatih/color"
 )
 
@@ -32,7 +33,7 @@ func init() {
 	flag.BoolVar(&base1000, "k", false, "use base 1000 instead of 1024")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, `
-dirsize (v1.2.0)
+dirsize (v1.2.1)
   Summarize size of directories and files in directories.
 
 Usage: dirsize [OPTION...] [DIR...]
@@ -89,12 +90,12 @@ func main() {
 			}
 		}
 
-		fmt.Printf("\n%s: %v\n", blue(arg), f(uint64(size)))
+		fmt.Printf("\n%s: %s (%s)\n", blue(arg), f(uint64(size)), humanize.Comma(size))
 		for _, item := range info {
 			if item.IsDir {
-				fmt.Printf("%10v\t%s\n", f(uint64(item.Value)), blue(item.Key))
+				fmt.Printf("%10s\t%s\n", f(uint64(item.Value)), blue(item.Key))
 			} else {
-				fmt.Printf("%10v\t%s\n", f(uint64(item.Value)), item.Key)
+				fmt.Printf("%10s\t%s\n", f(uint64(item.Value)), item.Key)
 			}
 		}
 	}
@@ -126,9 +127,11 @@ func FolderSize(dirname string, firstLevel bool) (int64, []Item, error) {
 		return 0, nil, err
 	}
 
-	// it'a a file
+	// size
+	size1 := fi.Size()
+
+	// it's a file
 	if !fi.IsDir() {
-		size1 := fi.Size()
 		if firstLevel {
 			info = append(info, Item{dirname, size1, false})
 		}
@@ -197,6 +200,8 @@ func FolderSize(dirname string, firstLevel bool) (int64, []Item, error) {
 
 		}
 	}
+
+	size += size1 // add the size of the directory
 	return size, info, nil
 }
 

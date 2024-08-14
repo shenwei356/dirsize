@@ -2,7 +2,10 @@ module github.com/shenwei356/dirsize
 
 go 1.23.0
 
-require github.com/fatih/color v1.17.0
+require (
+	github.com/dustin/go-humanize v1.0.1
+	github.com/fatih/color v1.17.0
+)
 
 require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
