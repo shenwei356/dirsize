@@ -33,7 +33,7 @@ func init() {
 	flag.BoolVar(&base1000, "k", false, "use base 1000 instead of 1024")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, `
-dirsize (v1.2.1)
+dirsize (v1.2.2)
   Summarize size of directories and files in directories.
 
 Usage: dirsize [OPTION...] [DIR...]
@@ -174,16 +174,24 @@ func FolderSize(dirname string, firstLevel bool) (int64, []Item, error) {
 			// DO NOT use ioutil.ReadFile, which will exhaust the RAM!!!!
 			f2, err := os.Open(fileFullPath)
 
-			if err != nil && os.IsPermission(err) {
-				recover()
-				// open-permission-denied file
-				fmt.Fprintf(os.Stderr, "read permission denied (file): %s\n", fileFullPath)
+			if err != nil {
+				if os.IsPermission(err) {
+					recover()
+					// open-permission-denied file
+					fmt.Fprintf(os.Stderr, "read permission denied (file): %s\n", fileFullPath)
+				} else {
+					// other errors, e.g., invalid argument for special files
+					fmt.Fprintf(os.Stderr, "error opening file: %s: %v\n", fileFullPath, err)
+				}
 				continue
 			}
 
 			fi, err := f2.Stat()
 			if err != nil {
-				return 0, nil, err
+				// skip this file if stat fails (e.g., invalid argument for special files)
+				fmt.Fprintf(os.Stderr, "error stating file: %s: %v\n", fileFullPath, err)
+				f2.Close()
+				continue
 			}
 
 			size1 := fi.Size()
@@ -193,10 +201,8 @@ func FolderSize(dirname string, firstLevel bool) (int64, []Item, error) {
 			}
 
 			// to avoid panic "open two many file"
-			// defer df2.Close() did not seccess due to "nil pointer err"
-			if f2 != nil {
-				f2.Close()
-			}
+			// defer f2.Close() did not seccess due to "nil pointer err"
+			f2.Close()
 
 		}
 	}
